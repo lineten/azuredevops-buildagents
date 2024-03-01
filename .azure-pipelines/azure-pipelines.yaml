@@ -1,0 +1,32 @@
+variables:
+  - template: templates/variables/organisation/variablesV0.yaml@templates
+  - template: templates/variables/project/variablesV1.yaml@templates
+
+#The following section should not be modified
+# resources:
+  # repositories:
+  #   - repository: templates
+  #     type: github
+  #     name: lineten/sre-yml-infrastructure
+  #     endpoint: "lineten github"
+  #     resources:
+  # repositories:
+  #   - repository: azuredevops-buildagents
+  #     type: github
+  #     name: YannickRe/azuredevops-buildagents
+  #     endpoint: "lineten github"
+  #     ref: refs/heads/main      
+name: Create Build Agent
+
+stages:
+  - stage: BuildImage
+    displayName: Build Image
+    pool:
+      name: "Machine Scale Set pool"
+    jobs:
+    - template: buildagent-generation-template.yml
+      parameters: 
+        image_type: ubuntu2204
+        variable_group: Virtual_Machine_Scale_Set
+        agent_pool: "Machine Scale Set pool"
+        # repository_base_path: <repository_base_path>
