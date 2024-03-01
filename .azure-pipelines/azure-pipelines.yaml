@@ -32,10 +32,16 @@ stages:
     pool:
       name: "Azure Pipelines"
     jobs:
-    - template: ../buildagent-generation-template.yml
-      parameters: 
-        image_type: ubuntu2204
-        variable_group: Virtual_Machine_Scale_Set
-        agent_pool: "Azure Pipelines"
-        # repository_base_path: <repository_base_path>
+      - job: myJob
+        timeoutInMinutes: 10
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+        - bash: echo "Hello world"
+    # - template: ../buildagent-generation-template.yml
+    #   parameters: 
+    #     image_type: ubuntu2204
+    #     variable_group: Virtual_Machine_Scale_Set
+    #     agent_pool: "Azure Pipelines"
+    #     # repository_base_path: <repository_base_path>
 
