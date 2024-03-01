@@ -41,201 +41,201 @@ parameters:
       - galleryvm
       - vmss
 
-- stages:
-    - stage: buildagent_template_vm
-      displayName: 'Build Agent Template VM'
-      ${{ if ne(parameters.depends_on, ' ') }}:
-        dependsOn: ${{ parameters.depends_on }}
-      jobs:
-        - job: generate_image
-          displayName: Image Generation (${{ parameters.image_type }})
-          timeoutInMinutes: '600'
-          cancelTimeoutInMinutes: '30'
-          variables:
-            - group: ${{ parameters.variable_group_name }}
-          pool:
-            name: ${{ parameters.agent_pool }}
+stages:
+  - stage: buildagent_template_vm
+    displayName: 'Build Agent Template VM'
+    ${{ if ne(parameters.depends_on, ' ') }}:
+      dependsOn: ${{ parameters.depends_on }}
+    jobs:
+      - job: generate_image
+        displayName: Image Generation (${{ parameters.image_type }})
+        timeoutInMinutes: '600'
+        cancelTimeoutInMinutes: '30'
+        variables:
+          - group: ${{ parameters.variable_group_name }}
+        pool:
+          name: ${{ parameters.agent_pool }}
 
-          steps:
-            - checkout: self
-            
-            - ${{ if ne(parameters.repository_base_path, '.') }}:
-                - checkout: ${{ parameters.repository_base_path }}
-            
-            - task: PowerShell@2
-              displayName: 'Checkout the GitHub repository'
-              inputs:
-                targetType: 'inline'
-                script: |
-                  $GitHubOwner = 'actions'
-                  $RepoName = 'runner-images'
+        steps:
+          - checkout: self
+          
+          - ${{ if ne(parameters.repository_base_path, '.') }}:
+              - checkout: ${{ parameters.repository_base_path }}
+          
+          - task: PowerShell@2
+            displayName: 'Checkout the GitHub repository'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $GitHubOwner = 'actions'
+                $RepoName = 'runner-images'
 
-                  if (Test-Path ".\$RepoName\") { Remove-Item -Recurse -Force ".\$RepoName\" }
+                if (Test-Path ".\$RepoName\") { Remove-Item -Recurse -Force ".\$RepoName\" }
 
-                  git clone "https://github.com/$GitHubOwner/$RepoName.git"
+                git clone "https://github.com/$GitHubOwner/$RepoName.git"
 
-                  $runner_images_version = '${{ parameters.runner_images_version }}'
-                  Write-Output "runner images version = $runner_images_version"
-                  if ($runner_images_version -ne 'alpha') {
-                    $os_image_type = '${{ parameters.image_type }}'
-                    Write-Output "os image type = $os_image_type"
-                    switch ($os_image_type) {
-                      'windows2019' { $OSTagPrefix = 'win19' }
-                      'windows2022' { $OSTagPrefix = 'win22' }
-                      'ubuntu2004' { $OSTagPrefix = 'ubuntu20' }
-                      'ubuntu2204' { $OSTagPrefix = 'ubuntu22' }
-                    }
-                    Write-Output "OSTagPrefix = $OSTagPrefix"
-
-                    $IncludePrerelease = if ($runner_images_version -eq 'prerelease') { $true } else { $false }
-                    Write-Output "IncludePrerelease = $IncludePrerelease"
-
-                    $latest_release = ${{ parameters.repository_base_path }}/scripts/get-latestgithubrelease.ps1 -OSTagPrefix $OSTagPrefix -GitHubOwner $GitHubOwner -RepoName $RepoName -IncludePrerelease $IncludePrerelease
-                    write-output $latest_release
-                    cd runner-images
-                    git checkout ($latest_release.tag_name)
+                $runner_images_version = '${{ parameters.runner_images_version }}'
+                Write-Output "runner images version = $runner_images_version"
+                if ($runner_images_version -ne 'alpha') {
+                  $os_image_type = '${{ parameters.image_type }}'
+                  Write-Output "os image type = $os_image_type"
+                  switch ($os_image_type) {
+                    'windows2019' { $OSTagPrefix = 'win19' }
+                    'windows2022' { $OSTagPrefix = 'win22' }
+                    'ubuntu2004' { $OSTagPrefix = 'ubuntu20' }
+                    'ubuntu2204' { $OSTagPrefix = 'ubuntu22' }
                   }
-            
-            - task: PowerShell@2
-              name: setVars
-              displayName: 'Set image template variables'
-              inputs:
-                targetType: 'inline'
-                script: |
-                  if ("${{ parameters.image_type }}" -eq "ubuntu2004") {
-                    Write-Host "##vso[task.setvariable variable=image_readme_name]Ubuntu2004-Readme.md"
-                    $image_template_name = "ubuntu-20.04.pkr.hcl"
+                  Write-Output "OSTagPrefix = $OSTagPrefix"
+
+                  $IncludePrerelease = if ($runner_images_version -eq 'prerelease') { $true } else { $false }
+                  Write-Output "IncludePrerelease = $IncludePrerelease"
+
+                  $latest_release = ${{ parameters.repository_base_path }}/scripts/get-latestgithubrelease.ps1 -OSTagPrefix $OSTagPrefix -GitHubOwner $GitHubOwner -RepoName $RepoName -IncludePrerelease $IncludePrerelease
+                  write-output $latest_release
+                  cd runner-images
+                  git checkout ($latest_release.tag_name)
+                }
+          
+          - task: PowerShell@2
+            name: setVars
+            displayName: 'Set image template variables'
+            inputs:
+              targetType: 'inline'
+              script: |
+                if ("${{ parameters.image_type }}" -eq "ubuntu2004") {
+                  Write-Host "##vso[task.setvariable variable=image_readme_name]Ubuntu2004-Readme.md"
+                  $image_template_name = "ubuntu-20.04.pkr.hcl"
+                }
+                elseif ("${{ parameters.image_type }}" -eq "ubuntu2204") {
+                  Write-Host "##vso[task.setvariable variable=image_readme_name]Ubuntu2204-Readme.md"
+                  $image_template_name = "ubuntu-22.04.pkr.hcl"
+                }
+                elseif ("${{ parameters.image_type }}" -eq "windows2019") {
+                  Write-Host "##vso[task.setvariable variable=image_readme_name]Windows2019-Readme.md"
+                  $image_template_name = "windows-2019.pkr.hcl"
+                }
+                elseif ("${{ parameters.image_type }}" -eq "windows2022") {
+                  Write-Host "##vso[task.setvariable variable=image_readme_name]Windows2022-Readme.md"
+                  $image_template_name = "windows-2022.pkr.hcl"
+                }
+
+                $ImageType = "${{ parameters.image_type }}"
+                $TemplateDirectoryName = if ($ImageType.StartsWith("ubuntu")) { "ubuntu/templates" } else { "windows/templates" }
+                $TemplateDirectoryPath = Join-Path (Join-Path "runner-images" "images") $TemplateDirectoryName | Resolve-Path
+
+                $TemplateFileName = $image_template_name
+                if ($TemplateFileName) {
+                  $TemplatePath = Join-Path $TemplateDirectoryPath $TemplateFileName
+                } else {
+                  $TemplatePath = Join-Path $TemplateDirectoryPath "$ImageType.pkr.hcl"
+                  if ( -not (Test-Path $TemplatePath) ) {
+                      $TemplatePath = Join-Path $TemplateDirectoryPath "$ImageType.json"
                   }
-                  elseif ("${{ parameters.image_type }}" -eq "ubuntu2204") {
-                    Write-Host "##vso[task.setvariable variable=image_readme_name]Ubuntu2204-Readme.md"
-                    $image_template_name = "ubuntu-22.04.pkr.hcl"
-                  }
-                  elseif ("${{ parameters.image_type }}" -eq "windows2019") {
-                    Write-Host "##vso[task.setvariable variable=image_readme_name]Windows2019-Readme.md"
-                    $image_template_name = "windows-2019.pkr.hcl"
-                  }
-                  elseif ("${{ parameters.image_type }}" -eq "windows2022") {
-                    Write-Host "##vso[task.setvariable variable=image_readme_name]Windows2022-Readme.md"
-                    $image_template_name = "windows-2022.pkr.hcl"
-                  }
+                }
+                Write-Host "##vso[task.setvariable variable=TemplateDirectoryPath;]$TemplateDirectoryPath"
+                Write-Host "##vso[task.setvariable variable=TemplatePath;]$TemplatePath"
 
-                  $ImageType = "${{ parameters.image_type }}"
-                  $TemplateDirectoryName = if ($ImageType.StartsWith("ubuntu")) { "ubuntu/templates" } else { "windows/templates" }
-                  $TemplateDirectoryPath = Join-Path (Join-Path "runner-images" "images") $TemplateDirectoryName | Resolve-Path
+                $ManagedImageName = "${{ parameters.image_type }}-$(Build.BuildId)"
+                Write-Host "##vso[task.setvariable variable=ManagedImageName;]$ManagedImageName"
 
-                  $TemplateFileName = $image_template_name
-                  if ($TemplateFileName) {
-                    $TemplatePath = Join-Path $TemplateDirectoryPath $TemplateFileName
-                  } else {
-                    $TemplatePath = Join-Path $TemplateDirectoryPath "$ImageType.pkr.hcl"
-                    if ( -not (Test-Path $TemplatePath) ) {
-                        $TemplatePath = Join-Path $TemplateDirectoryPath "$ImageType.json"
-                    }
-                  }
-                  Write-Host "##vso[task.setvariable variable=TemplateDirectoryPath;]$TemplateDirectoryPath"
-                  Write-Host "##vso[task.setvariable variable=TemplatePath;]$TemplatePath"
+                $TempResourceGroupName = "packer-temp-$ManagedImageName"
+                Write-Host "##vso[task.setvariable variable=TempResourceGroupName;]$TempResourceGroupName"
 
-                  $ManagedImageName = "${{ parameters.image_type }}-$(Build.BuildId)"
-                  Write-Host "##vso[task.setvariable variable=ManagedImageName;]$ManagedImageName"
+                $GalleryVmImageDefinition = "$ImageType-agentpool-full"
+                Write-Host "##vso[task.setvariable variable=GalleryVmImageDefinition;isOutput=true]$GalleryVmImageDefinition"
+                Write-Host "##vso[task.setvariable variable=ManagedImageNameOutput;isOutput=true]$ManagedImageName"
+                
+          - task: PowerShell@2
+            displayName: 'Workaround for issue: https://github.com/actions/runner-images/discussions/6251'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $ImageType = "${{ parameters.image_type }}"
+                $OsType = if ($ImageType.StartsWith("ubuntu")) { "Linux" } else { "Windows" }
+                If ($OsType -eq 'Windows') {
+                  Write-Host 'Attempting to modify $(TemplatePath) with workaround'
+                  ((Get-Content -path "$(TemplatePath)" -Raw) -replace 'default = {}','default = {"ExcludeMdeAutoProvisioning": "True"}') | Set-Content -Path "$(TemplatePath)"
+                  Write-Host "##[section] Template $(TemplatePath) modified"
+                } else {
+                  Write-Host "##[section] Patch not applied as $(TemplatePath) is not a Windows template"
+                }
 
-                  $TempResourceGroupName = "packer-temp-$ManagedImageName"
-                  Write-Host "##vso[task.setvariable variable=TempResourceGroupName;]$TempResourceGroupName"
+          - task: PowerShell@2
+            name: buildVm
+            displayName: "Build VM"
+            inputs:
+              targetType: filePath
+              filePath: ./runner-images/images.CI/linux-and-win/build-image.ps1
+              arguments: -ClientId $(CLIENT_ID) `
+                -ClientSecret $(CLIENT_SECRET) `
+                -TemplatePath $(TemplatePath) `
+                -ImageName "$(ManagedImageName)" `
+                -ImageResourceGroupName $(AZURE_RESOURCE_GROUP) `
+                -TempResourceGroupName "$(TempResourceGroupName)" `
+                -SubscriptionId $(AZURE_SUBSCRIPTION) `
+                -TenantId $(AZURE_TENANT) `
+                -Location $(AZURE_LOCATION) `
+                -VirtualNetworkName $(BUILD_AGENT_VNET_NAME) `
+                -VirtualNetworkRG $(BUILD_AGENT_VNET_RESOURCE_GROUP) `
+                -VirtualNetworkSubnet $(BUILD_AGENT_SUBNET_NAME)
+            env:
+              PACKER_LOG: 1
+              PACKER_LOG_PATH: "$(Agent.TempDirectory)/packer-log.txt"
 
-                  $GalleryVmImageDefinition = "$ImageType-agentpool-full"
-                  Write-Host "##vso[task.setvariable variable=GalleryVmImageDefinition;isOutput=true]$GalleryVmImageDefinition"
-                  Write-Host "##vso[task.setvariable variable=ManagedImageNameOutput;isOutput=true]$ManagedImageName"
-                  
-            - task: PowerShell@2
-              displayName: 'Workaround for issue: https://github.com/actions/runner-images/discussions/6251'
-              inputs:
-                targetType: 'inline'
-                script: |
-                  $ImageType = "${{ parameters.image_type }}"
-                  $OsType = if ($ImageType.StartsWith("ubuntu")) { "Linux" } else { "Windows" }
-                  If ($OsType -eq 'Windows') {
-                    Write-Host 'Attempting to modify $(TemplatePath) with workaround'
-                    ((Get-Content -path "$(TemplatePath)" -Raw) -replace 'default = {}','default = {"ExcludeMdeAutoProvisioning": "True"}') | Set-Content -Path "$(TemplatePath)"
-                    Write-Host "##[section] Template $(TemplatePath) modified"
-                  } else {
-                    Write-Host "##[section] Patch not applied as $(TemplatePath) is not a Windows template"
-                  }
+          - task: PowerShell@2
+            displayName: 'Copy image artifacts to the separate directory'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $ImageType = "${{ parameters.image_type }}"
+                $rootDirectoryName = if ($ImageType.StartsWith("ubuntu")) { "ubuntu" } else { "windows" }
+                $rootDirectoryPath = Join-Path (Join-Path "runner-images" "images") $rootDirectoryName | Resolve-Path
 
-            - task: PowerShell@2
-              name: buildVm
-              displayName: "Build VM"
-              inputs:
-                targetType: filePath
-                filePath: ./runner-images/images.CI/linux-and-win/build-image.ps1
-                arguments: -ClientId $(CLIENT_ID) `
-                  -ClientSecret $(CLIENT_SECRET) `
-                  -TemplatePath $(TemplatePath) `
-                  -ImageName "$(ManagedImageName)" `
-                  -ImageResourceGroupName $(AZURE_RESOURCE_GROUP) `
-                  -TempResourceGroupName "$(TempResourceGroupName)" `
-                  -SubscriptionId $(AZURE_SUBSCRIPTION) `
-                  -TenantId $(AZURE_TENANT) `
-                  -Location $(AZURE_LOCATION) `
-                  -VirtualNetworkName $(BUILD_AGENT_VNET_NAME) `
-                  -VirtualNetworkRG $(BUILD_AGENT_VNET_RESOURCE_GROUP) `
-                  -VirtualNetworkSubnet $(BUILD_AGENT_SUBNET_NAME)
-              env:
-                PACKER_LOG: 1
-                PACKER_LOG_PATH: "$(Agent.TempDirectory)/packer-log.txt"
+                $readmePath = Join-Path $rootDirectoryPath "$(image_readme_name)"
+                $softwareReportPath = Join-Path $rootDirectoryPath "software-report.json"
 
-            - task: PowerShell@2
-              displayName: 'Copy image artifacts to the separate directory'
-              inputs:
-                targetType: 'inline'
-                script: |
-                  $ImageType = "${{ parameters.image_type }}"
-                  $rootDirectoryName = if ($ImageType.StartsWith("ubuntu")) { "ubuntu" } else { "windows" }
-                  $rootDirectoryPath = Join-Path (Join-Path "runner-images" "images") $rootDirectoryName | Resolve-Path
+                Copy-Item -Path $readmePath -Destination "$(Build.ArtifactStagingDirectory)/"
+                if (Test-Path $softwareReportPath) {
+                    Copy-Item -Path $softwareReportPath -Destination "$(Build.ArtifactStagingDirectory)/"
+                }
 
-                  $readmePath = Join-Path $rootDirectoryPath "$(image_readme_name)"
-                  $softwareReportPath = Join-Path $rootDirectoryPath "software-report.json"
+          - task: PowerShell@2
+            displayName: 'Print markdown software report'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Get-Content -Path "$(Build.ArtifactStagingDirectory)/$(image_readme_name)"
 
-                  Copy-Item -Path $readmePath -Destination "$(Build.ArtifactStagingDirectory)/"
-                  if (Test-Path $softwareReportPath) {
-                      Copy-Item -Path $softwareReportPath -Destination "$(Build.ArtifactStagingDirectory)/"
-                  }
+          - task: PowerShell@2
+            displayName: 'Print json software report'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $softwareReportPath = "$(Build.ArtifactStagingDirectory)/software-report.json"
+                if (Test-Path $softwareReportPath) {
+                    Get-Content -Path $softwareReportPath
+                }
 
-            - task: PowerShell@2
-              displayName: 'Print markdown software report'
-              inputs:
-                targetType: 'inline'
-                script: |
-                  Get-Content -Path "$(Build.ArtifactStagingDirectory)/$(image_readme_name)"
+          - task: PublishBuildArtifacts@1
+            inputs:
+              ArtifactName: 'Built_VM_Artifacts'
+            displayName: Publish Artifacts
 
-            - task: PowerShell@2
-              displayName: 'Print json software report'
-              inputs:
-                targetType: 'inline'
-                script: |
-                  $softwareReportPath = "$(Build.ArtifactStagingDirectory)/software-report.json"
-                  if (Test-Path $softwareReportPath) {
-                      Get-Content -Path $softwareReportPath
-                  }
+          - task: PowerShell@2
+            displayName: 'Print provisioners duration'
+            inputs:
+              targetType: 'filePath'
+              filePath: ./runner-images/images.CI/measure-provisioners-duration.ps1
+              arguments:
+                -PackerLogPath "$(Agent.TempDirectory)/packer-log.txt" `
+                -PrefixToPathTrim "$(TemplateDirectoryPath)" `
+                -PrintTopNLongest 25
 
-            - task: PublishBuildArtifacts@1
-              inputs:
-                ArtifactName: 'Built_VM_Artifacts'
-              displayName: Publish Artifacts
-
-            - task: PowerShell@2
-              displayName: 'Print provisioners duration'
-              inputs:
-                targetType: 'filePath'
-                filePath: ./runner-images/images.CI/measure-provisioners-duration.ps1
-                arguments:
-                  -PackerLogPath "$(Agent.TempDirectory)/packer-log.txt" `
-                  -PrefixToPathTrim "$(TemplateDirectoryPath)" `
-                  -PrintTopNLongest 25
-
-            - task: PowerShell@2
-              displayName: "Clean up resources"
-              condition: always()
-              inputs:
-                targetType: filePath
+          - task: PowerShell@2
+            displayName: "Clean up resources"
+            condition: always()
+            inputs:
+              targetType: filePath
               filePath: ./runner-images/images.CI/linux-and-win/cleanup.ps1
               arguments: -TempResourceGroupName "$(TempResourceGroupName)" `
                 -SubscriptionId $(AZURE_SUBSCRIPTION) `
