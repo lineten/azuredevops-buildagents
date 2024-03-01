@@ -1,6 +1,6 @@
-variables:
-  - template: templates/variables/organisation/variablesV0.yaml@templates
-  - template: templates/variables/project/variablesV1.yaml@templates
+# variables:
+#   - template: templates/variables/organisation/variablesV0.yaml@templates
+#   - template: templates/variables/project/variablesV1.yaml@templates
 
 #The following section should not be modified
 # resources:
