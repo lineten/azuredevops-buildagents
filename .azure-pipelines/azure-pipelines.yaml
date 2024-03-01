@@ -18,13 +18,21 @@
   #     ref: refs/heads/main      
 name: Create Build Agent
 
+resources:
+  repositories:
+    - repository: azuredevops-buildagents
+      type: github
+      name: YannickRe/azuredevops-buildagents
+      endpoint: "lineten github"
+      ref: refs/heads/main
+
 stages:
   - stage: BuildImage
     displayName: Build Image
     pool:
       name: "Machine Scale Set pool"
     jobs:
-    - template: ../buildagent-generation-template.yml
+    - template: buildagent-generation-template.yml@azuredevops-buildagents
       parameters: 
         image_type: ubuntu2204
         variable_group: Virtual_Machine_Scale_Set
