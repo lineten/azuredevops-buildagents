@@ -23,7 +23,7 @@ resources:
     - repository: azuredevops-buildagents
       type: github
       name: YannickRe/azuredevops-buildagents
-      endpoint: "lineten github"
+      endpoint: "lineten"
       ref: refs/heads/main
 
 stages:
