@@ -26,6 +26,11 @@ resources:
       endpoint: "lineten"
       ref: refs/heads/main
 
+trigger:
+  branches:
+    include:
+      - main
+
 stages:
   - stage: BuildImage
     displayName: Build Image
