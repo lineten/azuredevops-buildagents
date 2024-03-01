@@ -43,7 +43,7 @@ stages:
           vmImage: 'ubuntu-latest'
         steps:
         - bash: echo "Hello world"
-      - template: buildagent-generation-template.yml@self
+      - template: /buildagent-generation-template.yml
         parameters: 
           image_type: ubuntu2204
           variable_group: Virtual_Machine_Scale_Set
