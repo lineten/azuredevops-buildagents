@@ -43,10 +43,10 @@ stages:
           vmImage: 'ubuntu-latest'
         steps:
         - bash: echo "Hello world"
-    # - template: ../buildagent-generation-template.yml
-    #   parameters: 
-    #     image_type: ubuntu2204
-    #     variable_group: Virtual_Machine_Scale_Set
-    #     agent_pool: "Azure Pipelines"
-    #     # repository_base_path: <repository_base_path>
+      - template: buildagent-generation-template.yml@azuredevops-buildagents
+        parameters: 
+          image_type: ubuntu2204
+          variable_group: Virtual_Machine_Scale_Set
+          agent_pool: "Azure Pipelines"
+          repository_base_path: .
 
